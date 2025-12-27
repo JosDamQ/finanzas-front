@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "556015289954",
+    "project_id": "finanzas-dev-bdccc",
+    "storage_bucket": "finanzas-dev-bdccc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:556015289954:android:1bbc163da80423db8df33b",
+        "android_client_info": {
+          "package_name": "com.example.front"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCM8ut397_NmzYROcqYI3q8w5czyw3cWRI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
