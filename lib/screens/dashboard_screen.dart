@@ -4,9 +4,9 @@ import '../providers/auth_provider.dart';
 import '../providers/card_provider.dart';
 import '../models/credit_card.dart';
 import '../config/app_colors.dart';
+import '../services/storage_service.dart';
 
 import 'card_detail_screen.dart';
-
 import 'budgets_screen.dart';
 import 'budget_detail_screen.dart';
 import 'add_card_screen.dart';
@@ -28,7 +28,227 @@ class _DashboardScreenState extends State<DashboardScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CardProvider>().getCards();
       context.read<BudgetProvider>().getBudgets();
+      _checkBiometricDialog();
     });
+  }
+
+  Future<void> _checkBiometricDialog() async {
+    // Add a delay to ensure the screen is fully loaded
+    await Future.delayed(const Duration(milliseconds: 1000));
+
+    if (!mounted) return;
+
+    final authProvider = context.read<AuthProvider>();
+    final shouldShow = await authProvider.shouldShowBiometricDialog();
+
+    print("DEBUG: Dashboard - shouldShowBiometricDialog: $shouldShow");
+
+    if (shouldShow && mounted) {
+      _showBiometricDialog();
+    }
+  }
+
+  Future<void> _showBiometricDialog() async {
+    print("DEBUG: Dashboard - showing biometric dialog");
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Biometría"),
+        content: const Text(
+          "¿Deseas activar FaceID/Huella para iniciar sesión más rápido la próxima vez?",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              print("DEBUG: Dashboard - User declined biometrics");
+              Navigator.pop(ctx);
+            },
+            child: const Text("No, gracias"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              print("DEBUG: Dashboard - User accepted biometrics, testing...");
+              Navigator.pop(ctx);
+
+              final success = await context
+                  .read<AuthProvider>()
+                  .enableBiometrics();
+              print("DEBUG: Dashboard - Enable biometrics result: $success");
+
+              if (success) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Biometría activada exitosamente"),
+                    ),
+                  );
+                }
+              } else {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("No se pudo activar la biometría"),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text("Sí, activar"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showBiometricSettings() async {
+    final authProvider = context.read<AuthProvider>();
+    final bioEnabled = await StorageService.read('biometrics_enabled');
+    bool isEnabled = bioEnabled == 'true';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.fingerprint, color: Colors.blue),
+              SizedBox(width: 12),
+              Text("Configuración\nBiométrica"),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "Activa la autenticación biométrica para acceder más rápido a tu cuenta.",
+                style: TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Face ID / Huella Digital",
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  Switch(
+                    value: isEnabled,
+                    activeThumbColor: AppColors.primary,
+                    onChanged: (value) async {
+                      if (value) {
+                        // Activar biometría
+                        final success = await authProvider.enableBiometrics();
+                        if (success) {
+                          setState(() => isEnabled = true);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  "Biometría activada exitosamente",
+                                ),
+                                backgroundColor: AppColors.primary,
+                              ),
+                            );
+                          }
+                        } else {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  "No se pudo activar la biometría",
+                                ),
+                                backgroundColor: AppColors.error,
+                              ),
+                            );
+                          }
+                        }
+                      } else {
+                        // Desactivar biometría
+                        showDialog(
+                          context: context,
+                          builder: (confirmCtx) => AlertDialog(
+                            title: const Text("¿Desactivar Biometría?"),
+                            content: const Text(
+                              "Se eliminarán las credenciales guardadas y tendrás que ingresar tu email y contraseña manualmente.",
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(confirmCtx),
+                                child: const Text("Cancelar"),
+                              ),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.error,
+                                ),
+                                onPressed: () async {
+                                  await authProvider.disableBiometrics();
+                                  setState(() => isEnabled = false);
+                                  Navigator.pop(confirmCtx);
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text("Biometría desactivada"),
+                                        backgroundColor: AppColors.warning,
+                                      ),
+                                    );
+                                  }
+                                },
+                                child: const Text("Desactivar"),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
+              if (isEnabled) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(
+                        Icons.check_circle,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "La biometría está activa. Podrás usar Face ID en el login.",
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("Cerrar"),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -62,6 +282,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             icon: const Icon(Icons.logout),
             onPressed: () => context.read<AuthProvider>().logout(),
           ),
+          // Biometric settings button
+          IconButton(
+            icon: const Icon(Icons.fingerprint, color: Colors.blue),
+            onPressed: () => _showBiometricSettings(),
+            tooltip: "Configuración Biométrica",
+          ),
         ],
       ),
       body: cardProvider.isLoading
@@ -81,8 +307,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      // If we want a button here too:
-                      // IconButton(icon: Icon(Icons.add), onPressed: ...)
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -150,7 +374,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ],
                   ),
-                  // Financial Health Monitor (Replaces redundant summary)
+                  // Financial Health Monitor
                   if (currentBudget != null) ...[
                     _buildFinancialHealthCard(currentBudget),
                     const SizedBox(height: 24),
@@ -163,7 +387,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildFinancialHealthCard(Budget budget) {
     // Calculate "Pisto Para Gastar" (Money Left to Spend)
-    // Logic: Sum of all sections' toSpend
     double pistoLibre = 0;
     double totalAhorro = 0;
     List<Map<String, dynamic>> pendingExpenses = [];
@@ -217,7 +440,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               boxShadow: [
                 BoxShadow(
                   color: (pistoLibre >= 0 ? Colors.green : Colors.red)
-                      .withOpacity(0.3),
+                      .withValues(alpha: 0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 6),
                 ),

@@ -54,19 +54,7 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
     }
   }
 
-  void _addSection() {
-    setState(() {
-      _budget.sections.add(
-        BudgetSection(
-          title: "Nueva Sección",
-          income: 0,
-          savings: 0,
-          expenses: [],
-        ),
-      );
-      _hasChanges = true;
-    });
-  }
+  // Unused method removed
 
   void _addExpense(BudgetSection section) {
     setState(() {
@@ -630,17 +618,5 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
       'Dic',
     ];
     return months[month - 1];
-  }
-}
-
-extension on Budget {
-  Map<String, dynamic> toJson() {
-    return {
-      '_id': id,
-      'month': month,
-      'year': year,
-      'type': type,
-      'sections': sections.map((s) => s.toJson()).toList(),
-    };
   }
 }

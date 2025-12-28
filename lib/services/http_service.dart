@@ -38,22 +38,39 @@ class HttpService {
         onError: (DioException e, handler) {
           String errorMessage = 'Ocurrió un error inesperado';
 
-          if (e.response != null && e.response?.data != null) {
-            try {
-              final data = e.response?.data;
-              if (data is Map && data.containsKey('message')) {
-                errorMessage = data['message'];
+          if (e.response != null) {
+            if (e.response?.data != null) {
+              try {
+                final data = e.response?.data;
+                if (data is Map && data.containsKey('message')) {
+                  errorMessage = data['message'];
+                } else if (data is String) {
+                  // Sometimes backend sends plain text
+                  errorMessage = data;
+                } else {
+                  // Fallback to status message
+                  errorMessage =
+                      e.response?.statusMessage ?? e.message ?? errorMessage;
+                }
+              } catch (_) {
+                errorMessage = e.response?.statusMessage ?? errorMessage;
               }
-            } catch (_) {}
+            } else {
+              errorMessage = e.response?.statusMessage ?? errorMessage;
+            }
+          } else {
+            // No response (timeout, network error)
+            errorMessage = e.message ?? errorMessage;
           }
 
-          // Re-throw with custom message
+          // Re-throw with custom message attached to 'error' property
+          // Note: UI usually reads e.error or e.message
           return handler.next(
             DioException(
               requestOptions: e.requestOptions,
               response: e.response,
               type: e.type,
-              error: errorMessage,
+              error: errorMessage, // This is what we catch in UI usually
               message: errorMessage,
             ),
           );
