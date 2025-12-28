@@ -29,11 +29,26 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _checkBiometricStatus() async {
     try {
       final enabled = await StorageService.read('biometrics_enabled');
+      final bioUserEmail = await StorageService.read('biometric_user_email');
+      final storedEmail = await StorageService.read('stored_email');
+
+      // Only show Face ID button if:
+      // 1. Biometrics is enabled
+      // 2. There's a biometric user configured
+      // 3. There are stored credentials for that user
+      final shouldShow =
+          enabled == 'true' &&
+          bioUserEmail != null &&
+          storedEmail != null &&
+          storedEmail == bioUserEmail;
+
       setState(() {
-        _biometricsEnabled = enabled == 'true';
+        _biometricsEnabled = shouldShow;
         _checkingBiometrics = false;
       });
-      print("DEBUG: Login - biometrics enabled: $_biometricsEnabled");
+      print("DEBUG: Login - should show Face ID: $shouldShow");
+      print("DEBUG: Login - biometric user: $bioUserEmail");
+      print("DEBUG: Login - stored email: $storedEmail");
     } catch (e) {
       print("DEBUG: Error checking biometric status: $e");
       setState(() {
@@ -46,74 +61,72 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       print("DEBUG: Attempting biometric login");
 
-      // Check if we have stored credentials (this is what we need for biometric login)
+      // Get biometric configuration
+      final bioUserEmail = await StorageService.read('biometric_user_email');
+      final storedEmail = await StorageService.read('stored_email');
+      final storedPassword = await StorageService.read('stored_password');
 
-      // Add a small delay to ensure storage is ready
-      await Future.delayed(const Duration(milliseconds: 100));
+      print("DEBUG: Biometric user: $bioUserEmail");
+      print("DEBUG: Stored email: $storedEmail");
+      print("DEBUG: Stored password exists: ${storedPassword != null}");
 
-      final email = await StorageService.read('stored_email');
-      final password = await StorageService.read('stored_password');
-      final bioEnabled = await StorageService.read('biometrics_enabled');
-
-      print("DEBUG: Biometrics enabled: $bioEnabled");
-      print("DEBUG: Stored email exists: ${email != null}");
-      print("DEBUG: Stored email value: $email");
-      print("DEBUG: Stored password exists: ${password != null}");
-
-      if (email != null && password != null) {
-        print(
-          "DEBUG: Found stored credentials, authenticating with biometrics",
-        );
-
-        // First authenticate with biometrics
-        final localAuth = LocalAuthentication();
-        final didAuthenticate = await localAuth.authenticate(
-          localizedReason: 'Autentícate para acceder a tu cuenta',
-          biometricOnly: true,
-        );
-
-        print("DEBUG: Biometric authentication result: $didAuthenticate");
-
-        if (didAuthenticate) {
-          print(
-            "DEBUG: Biometric auth successful, logging in with stored credentials",
-          );
-          // If biometric auth successful, do login with stored credentials
-          final authProvider = context.read<AuthProvider>();
-          await authProvider.login(email, password);
-        } else {
-          print("DEBUG: Biometric auth failed or cancelled");
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text("Autenticación biométrica cancelada"),
-                backgroundColor: Colors.orange,
-              ),
-            );
-          }
-        }
-      } else {
-        print("DEBUG: No stored credentials found");
-        print("DEBUG: This is weird - let me check all storage keys");
-
-        // Debug: Check all keys in storage
-        try {
-          final allKeys = await StorageService.readAll();
-          print("DEBUG: All storage keys: ${allKeys.keys.toList()}");
-          for (var key in allKeys.keys) {
-            print("DEBUG: $key = ${allKeys[key]}");
-          }
-        } catch (e) {
-          print("DEBUG: Error reading all storage: $e");
-        }
-
+      // Verify we have valid biometric setup
+      if (bioUserEmail == null ||
+          storedEmail == null ||
+          storedPassword == null) {
+        print("DEBUG: Invalid biometric setup");
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
-                "No hay credenciales guardadas. Inicia sesión manualmente primero.",
+                "Configuración biométrica inválida. Configura Face ID nuevamente.",
               ),
               backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Verify stored credentials match biometric user
+      if (storedEmail != bioUserEmail) {
+        print("DEBUG: Stored credentials don't match biometric user");
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                "Error de configuración biométrica. Configura Face ID nuevamente.",
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Authenticate with biometrics
+      final localAuth = LocalAuthentication();
+      final didAuthenticate = await localAuth.authenticate(
+        localizedReason: 'Autentícate para acceder a tu cuenta',
+        biometricOnly: true,
+      );
+
+      print("DEBUG: Biometric authentication result: $didAuthenticate");
+
+      if (didAuthenticate) {
+        print(
+          "DEBUG: Biometric auth successful, logging in with stored credentials",
+        );
+        // If biometric auth successful, do login with stored credentials
+        final authProvider = context.read<AuthProvider>();
+        await authProvider.login(storedEmail, storedPassword);
+      } else {
+        print("DEBUG: Biometric auth failed or cancelled");
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Autenticación biométrica cancelada"),
+              backgroundColor: Colors.orange,
             ),
           );
         }

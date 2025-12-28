@@ -105,8 +105,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _showBiometricSettings() async {
     final authProvider = context.read<AuthProvider>();
+
+    // Check if biometrics is enabled AND if current user is the biometric user
     final bioEnabled = await StorageService.read('biometrics_enabled');
-    bool isEnabled = bioEnabled == 'true';
+    final bioUserEmail = await StorageService.read('biometric_user_email');
+    final currentUserEmail = authProvider.user?['email'];
+
+    // Only show as enabled if biometrics is active AND current user is the biometric user
+    bool isEnabled =
+        bioEnabled == 'true' &&
+        bioUserEmail != null &&
+        currentUserEmail != null &&
+        bioUserEmail == currentUserEmail;
+
+    print("DEBUG: Biometric settings - bioEnabled: $bioEnabled");
+    print("DEBUG: Biometric settings - bioUserEmail: $bioUserEmail");
+    print("DEBUG: Biometric settings - currentUserEmail: $currentUserEmail");
+    print("DEBUG: Biometric settings - isEnabled: $isEnabled");
 
     showDialog(
       context: context,
@@ -139,7 +154,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     activeThumbColor: AppColors.primary,
                     onChanged: (value) async {
                       if (value) {
-                        // Activar biometría
+                        // Activar biometría para este usuario
+                        // Si otro usuario tenía biometría, se desactivará automáticamente
                         final success = await authProvider.enableBiometrics();
                         if (success) {
                           setState(() => isEnabled = true);
@@ -147,7 +163,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text(
-                                  "Biometría activada exitosamente",
+                                  "Biometría activada exitosamente para esta cuenta",
                                 ),
                                 backgroundColor: AppColors.primary,
                               ),
@@ -172,7 +188,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           builder: (confirmCtx) => AlertDialog(
                             title: const Text("¿Desactivar Biometría?"),
                             content: const Text(
-                              "Se eliminarán las credenciales guardadas y tendrás que ingresar tu email y contraseña manualmente.",
+                              "Se desactivará Face ID para esta cuenta. Tendrás que ingresar tu email y contraseña manualmente.",
                             ),
                             actions: [
                               TextButton(
@@ -190,7 +206,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
-                                        content: Text("Biometría desactivada"),
+                                        content: Text(
+                                          "Biometría desactivada para esta cuenta",
+                                        ),
                                         backgroundColor: AppColors.warning,
                                       ),
                                     );
