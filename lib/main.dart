@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'firebase_options.dart';
 import 'config/app_theme.dart';
 import 'providers/auth_provider.dart';
 import 'screens/login_screen.dart';
@@ -17,13 +18,22 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
 
+  // Initialize Firebase here once and for all
+  print("DEBUG: Inicializando Firebase en main()...");
   try {
-    await Firebase.initializeApp();
-    await NotificationService.initialize();
+    // Check if already initialized
+    try {
+      Firebase.app();
+      print("DEBUG: Firebase ya estaba inicializado");
+    } catch (e) {
+      // Not initialized, so initialize it
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      print("DEBUG: Firebase inicializado exitosamente en main()");
+    }
   } catch (e) {
-    debugPrint(
-      "Firebase init failed (likely missing google-services.json): $e",
-    );
+    print("DEBUG: Error con Firebase en main(): $e");
   }
 
   runApp(const MyApp());
@@ -45,6 +55,10 @@ class MyApp extends StatelessWidget {
         theme: AppTheme.darkTheme,
         home: const AuthWrapper(),
         debugShowCheckedModeBanner: false,
+        routes: {
+          '/dashboard': (context) => const DashboardScreen(),
+          '/budgets': (context) => const BudgetsScreen(),
+        },
       ),
     );
   }
@@ -64,7 +78,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   void initState() {
     super.initState();
     _checkInitialAuth();
-    _setupNotifications();
+    _initializeNotifications();
   }
 
   Future<void> _checkInitialAuth() async {
@@ -77,9 +91,29 @@ class _AuthWrapperState extends State<AuthWrapper> {
     }
   }
 
+  Future<void> _initializeNotifications() async {
+    print("DEBUG: Iniciando inicialización de NotificationService...");
+
+    // Wait for the widget tree to be fully built
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (!mounted) return;
+
+    try {
+      // Firebase should already be initialized in main()
+      print("DEBUG: Inicializando NotificationService...");
+      await NotificationService.initialize(context: context);
+      print("DEBUG: NotificationService inicializado correctamente");
+    } catch (e) {
+      print("DEBUG: Error inicializando NotificationService: $e");
+    }
+  }
+
   void _setupNotifications() async {
     // Handle navigation when app is opened from notification
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      if (!mounted) return;
+
       if (message.data['type'] == 'limit_warning') {
         // Assuming you have a way to get cardId from data if needed
         // For now, go to dashboard
@@ -97,6 +131,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
+
+    // Update notification service context
+    NotificationService.updateContext(context);
 
     if (!_checkedAuth || authProvider.isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));

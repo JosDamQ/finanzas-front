@@ -5,6 +5,7 @@ import '../providers/card_provider.dart';
 import '../models/credit_card.dart';
 import '../config/app_colors.dart';
 import '../services/storage_service.dart';
+import '../services/notification_service.dart';
 
 import 'card_detail_screen.dart';
 import 'budgets_screen.dart';
@@ -94,6 +95,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _tryActivateNotifications() async {
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => const AlertDialog(
+          title: Text("Activando Notificaciones"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text("Intentando obtener token de notificaciones..."),
+            ],
+          ),
+        ),
+      );
+
+      // Try to get and send FCM token
+      final success = await NotificationService.tryToSendTokenToBackend();
+
+      Navigator.pop(context); // Close loading dialog
+
+      if (success) {
+        // Also try to send via AuthProvider
+        final authProvider = context.read<AuthProvider>();
+        await authProvider.sendFCMTokenManually();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("¡Notificaciones activadas exitosamente!"),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "No se pudo activar las notificaciones. Inténtalo más tarde.",
+            ),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      Navigator.pop(context); // Close loading dialog if still open
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+      );
+    }
   }
 
   Future<void> _showBiometricSettings() async {
@@ -283,6 +336,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               MaterialPageRoute(builder: (_) => const AddCardScreen()),
             ),
             tooltip: "Agregar Tarjeta",
+          ),
+          // Notification settings button
+          IconButton(
+            icon: const Icon(Icons.notifications, color: Colors.orange),
+            onPressed: () => _tryActivateNotifications(),
+            tooltip: "Activar Notificaciones",
           ),
           IconButton(
             icon: const Icon(Icons.logout),
