@@ -23,9 +23,11 @@ class AuthProvider extends ChangeNotifier {
     if (token != null) {
       // Check if biometrics enabled (for both splash and manual login)
       final bioEnabled = await StorageService.read('biometrics_enabled');
+      final bioUserEmail = await StorageService.read('biometric_user_email');
       print("DEBUG: biometrics enabled: $bioEnabled");
+      print("DEBUG: biometric user email: $bioUserEmail");
 
-      if (bioEnabled == 'true') {
+      if (bioEnabled == 'true' && bioUserEmail != null) {
         print("DEBUG: Attempting biometric authentication");
         final didAuthenticate = await _authenticateBiometrics();
         print("DEBUG: Biometric auth result: $didAuthenticate");
@@ -43,6 +45,16 @@ class AuthProvider extends ChangeNotifier {
         final response = await _httpService.client.get('/users/profile');
         if (response.data['success']) {
           _user = response.data['data'];
+
+          // Verify that the current user matches the biometric user (if biometrics enabled)
+          if (bioEnabled == 'true' && bioUserEmail != null) {
+            final currentUserEmail = _user?['email'];
+            if (currentUserEmail != bioUserEmail) {
+              print("DEBUG: User mismatch - disabling biometrics");
+              await disableBiometrics();
+            }
+          }
+
           _isAuthenticated = true;
           print("DEBUG: Profile loaded successfully");
         } else {
@@ -133,9 +145,28 @@ class AuthProvider extends ChangeNotifier {
       final bool didAuthenticate = await _authenticateBiometrics();
 
       if (didAuthenticate) {
-        await StorageService.write('biometrics_enabled', 'true');
-        print("DEBUG: Biometrics enabled successfully");
-        return true;
+        // Get current user email to associate biometrics with this specific user
+        final currentUserEmail = _user?['email'];
+        if (currentUserEmail != null) {
+          await StorageService.write('biometrics_enabled', 'true');
+          await StorageService.write('biometric_user_email', currentUserEmail);
+
+          // Ensure credentials are stored for this user
+          // (they should already be stored from login, but let's make sure)
+          final storedEmail = await StorageService.read('stored_email');
+          if (storedEmail != currentUserEmail) {
+            // This shouldn't happen with our new logic, but just in case
+            print("DEBUG: Warning - stored email doesn't match current user");
+          }
+
+          print(
+            "DEBUG: Biometrics enabled successfully for user: $currentUserEmail",
+          );
+          return true;
+        } else {
+          print("DEBUG: Error - no current user found");
+          return false;
+        }
       } else {
         print("DEBUG: Biometric test failed, not enabling");
         return false;
@@ -148,14 +179,16 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> disableBiometrics() async {
     await StorageService.delete('biometrics_enabled');
-    await StorageService.delete('stored_email');
-    await StorageService.delete('stored_password');
+    await StorageService.delete('biometric_user_email');
+    // Still preserve stored credentials in case user wants to re-enable later
+    print("DEBUG: Biometrics disabled and user association cleared");
   }
 
   Future<void> fullLogout() async {
     // Complete logout that also clears biometric data
     await StorageService.delete('jwt_token');
     await StorageService.delete('biometrics_enabled');
+    await StorageService.delete('biometric_user_email');
     await StorageService.delete('stored_email');
     await StorageService.delete('stored_password');
     _isAuthenticated = false;
@@ -179,12 +212,31 @@ class AuthProvider extends ChangeNotifier {
 
         await StorageService.write('jwt_token', token);
 
-        // Store credentials for biometric login (only if biometrics is enabled)
+        // Check if this user has biometrics enabled
         final bioEnabled = await StorageService.read('biometrics_enabled');
-        if (bioEnabled == 'true') {
+        final storedBioEmail = await StorageService.read(
+          'biometric_user_email',
+        );
+
+        // Only store/update credentials if:
+        // 1. Biometrics is enabled AND this is the same user, OR
+        // 2. No biometric user is set yet (first time)
+        if (bioEnabled == 'true' && storedBioEmail == email) {
+          // Update credentials for the biometric user
           await StorageService.write('stored_email', email);
           await StorageService.write('stored_password', password);
-          print("DEBUG: Stored credentials for biometric login");
+          print("DEBUG: Updated credentials for biometric user: $email");
+        } else if (storedBioEmail == null) {
+          // First login ever - store credentials as potential biometric user
+          await StorageService.write('stored_email', email);
+          await StorageService.write('stored_password', password);
+          print(
+            "DEBUG: Stored credentials for potential biometric login: $email",
+          );
+        } else {
+          print(
+            "DEBUG: Not storing credentials - different user or biometrics not enabled for this user",
+          );
         }
 
         _user = userData;
@@ -221,8 +273,7 @@ class AuthProvider extends ChangeNotifier {
       );
 
       if (response.data['success']) {
-        // Auto login or just return success
-        // Let's perform auto-login for better UX
+        // Auto login for better UX (this will also store credentials automatically)
         await login(email, password);
       }
     } catch (e) {
