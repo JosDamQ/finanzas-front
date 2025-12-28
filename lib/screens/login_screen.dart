@@ -46,11 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _biometricsEnabled = shouldShow;
         _checkingBiometrics = false;
       });
-      print("DEBUG: Login - should show Face ID: $shouldShow");
-      print("DEBUG: Login - biometric user: $bioUserEmail");
-      print("DEBUG: Login - stored email: $storedEmail");
     } catch (e) {
-      print("DEBUG: Error checking biometric status: $e");
       setState(() {
         _checkingBiometrics = false;
       });
@@ -59,22 +55,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _loginWithBiometrics() async {
     try {
-      print("DEBUG: Attempting biometric login");
-
       // Get biometric configuration
       final bioUserEmail = await StorageService.read('biometric_user_email');
       final storedEmail = await StorageService.read('stored_email');
       final storedPassword = await StorageService.read('stored_password');
 
-      print("DEBUG: Biometric user: $bioUserEmail");
-      print("DEBUG: Stored email: $storedEmail");
-      print("DEBUG: Stored password exists: ${storedPassword != null}");
-
       // Verify we have valid biometric setup
       if (bioUserEmail == null ||
           storedEmail == null ||
           storedPassword == null) {
-        print("DEBUG: Invalid biometric setup");
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -90,7 +79,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
       // Verify stored credentials match biometric user
       if (storedEmail != bioUserEmail) {
-        print("DEBUG: Stored credentials don't match biometric user");
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -111,17 +99,11 @@ class _LoginScreenState extends State<LoginScreen> {
         biometricOnly: true,
       );
 
-      print("DEBUG: Biometric authentication result: $didAuthenticate");
-
       if (didAuthenticate) {
-        print(
-          "DEBUG: Biometric auth successful, logging in with stored credentials",
-        );
         // If biometric auth successful, do login with stored credentials
         final authProvider = context.read<AuthProvider>();
         await authProvider.login(storedEmail, storedPassword);
       } else {
-        print("DEBUG: Biometric auth failed or cancelled");
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -132,7 +114,6 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
     } catch (e) {
-      print("DEBUG: Biometric login error: $e");
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
@@ -169,9 +150,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
+                      color: Colors.blue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                      border: Border.all(
+                        color: Colors.blue.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Column(
                       children: [
@@ -249,24 +232,24 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: () async {
                       if (_formKey.currentState!.validate()) {
                         try {
-                          print("DEBUG: Starting login...");
                           await authProvider.login(
                             _emailController.text,
                             _passwordController.text,
                           );
-                          print("DEBUG: Login completed successfully");
                           // Biometric dialog will be shown in Dashboard
                         } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                e.toString().replaceAll("DioException: ", ""),
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  e.toString().replaceAll("DioException: ", ""),
+                                ),
+                                backgroundColor: Theme.of(
+                                  context,
+                                ).colorScheme.error,
                               ),
-                              backgroundColor: Theme.of(
-                                context,
-                              ).colorScheme.error,
-                            ),
-                          );
+                            );
+                          }
                         }
                       }
                     },

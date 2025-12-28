@@ -2,7 +2,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class StorageService {
   static const FlutterSecureStorage _storage = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
     iOptions: IOSOptions(
       accessibility: KeychainAccessibility.first_unlock_this_device,
     ),
@@ -12,7 +11,6 @@ class StorageService {
     try {
       return await _storage.read(key: key);
     } catch (e) {
-      print("DEBUG: Storage read error for key '$key': $e");
       return null;
     }
   }
@@ -20,18 +18,16 @@ class StorageService {
   static Future<void> write(String key, String value) async {
     try {
       await _storage.write(key: key, value: value);
-      print("DEBUG: Storage write success for key '$key'");
     } catch (e) {
-      print("DEBUG: Storage write error for key '$key': $e");
+      // Handle error silently
     }
   }
 
   static Future<void> delete(String key) async {
     try {
       await _storage.delete(key: key);
-      print("DEBUG: Storage delete success for key '$key'");
     } catch (e) {
-      print("DEBUG: Storage delete error for key '$key': $e");
+      // Handle error silently
     }
   }
 
@@ -39,7 +35,6 @@ class StorageService {
     try {
       return await _storage.readAll();
     } catch (e) {
-      print("DEBUG: Storage readAll error: $e");
       return {};
     }
   }

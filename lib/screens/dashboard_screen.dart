@@ -41,16 +41,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final authProvider = context.read<AuthProvider>();
     final shouldShow = await authProvider.shouldShowBiometricDialog();
 
-    print("DEBUG: Dashboard - shouldShowBiometricDialog: $shouldShow");
-
     if (shouldShow && mounted) {
       _showBiometricDialog();
     }
   }
 
   Future<void> _showBiometricDialog() async {
-    print("DEBUG: Dashboard - showing biometric dialog");
-
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -62,20 +58,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              print("DEBUG: Dashboard - User declined biometrics");
               Navigator.pop(ctx);
             },
             child: const Text("No, gracias"),
           ),
           ElevatedButton(
             onPressed: () async {
-              print("DEBUG: Dashboard - User accepted biometrics, testing...");
               Navigator.pop(ctx);
 
               final success = await context
                   .read<AuthProvider>()
                   .enableBiometrics();
-              print("DEBUG: Dashboard - Enable biometrics result: $success");
 
               if (success) {
                 if (context.mounted) {
@@ -117,11 +110,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         bioUserEmail != null &&
         currentUserEmail != null &&
         bioUserEmail == currentUserEmail;
-
-    print("DEBUG: Biometric settings - bioEnabled: $bioEnabled");
-    print("DEBUG: Biometric settings - bioUserEmail: $bioUserEmail");
-    print("DEBUG: Biometric settings - currentUserEmail: $currentUserEmail");
-    print("DEBUG: Biometric settings - isEnabled: $isEnabled");
 
     showDialog(
       context: context,
