@@ -17,7 +17,17 @@ migrate_working_dir/
 *.ipr
 *.iws
 .idea/
+
+# Environment files
 .env
+.env.local
+.env.production
+.env.staging
+
+# Firebase configuration files (IMPORTANT: Keep these private)
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+lib/firebase_options.dart
 
 # The .vscode folder contains launch configuration and tasks you configure in
 # VS Code which you may wish to be included in version control, so this line
