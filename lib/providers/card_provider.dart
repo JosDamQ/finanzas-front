@@ -83,6 +83,22 @@ class CardProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> deleteTransaction(String transactionId) async {
+    try {
+      final response = await _httpService.client.delete(
+        '/credit-cards/transactions/$transactionId',
+      );
+      if (response.data['success']) {
+        // Update local state
+        if (_selectedCard != null) {
+          await getCardDetail(_selectedCard!.id);
+        }
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<void> createCard(
     String name,
     double limit,

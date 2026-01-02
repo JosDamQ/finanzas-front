@@ -58,16 +58,26 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
 
   void _addExpense(BudgetSection section) {
     setState(() {
-      section.expenses.add(BudgetExpense(name: "", amount: 0, isPaid: false));
+      section.expenses.add(
+        BudgetExpense(
+          name: "",
+          amount: 0,
+          isPaid: false,
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+        ),
+      );
       _hasChanges = true;
     });
   }
 
   void _removeExpense(BudgetSection section, int index) {
-    setState(() {
-      section.expenses.removeAt(index);
-      _hasChanges = true;
-    });
+    // Verificar que el índice sea válido
+    if (index >= 0 && index < section.expenses.length) {
+      setState(() {
+        section.expenses.removeAt(index);
+        _hasChanges = true;
+      });
+    }
   }
 
   void _deleteBudget() {
@@ -409,7 +419,9 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
                       fontSize: 16,
                     ),
                     textAlign: TextAlign.right,
-                    keyboardType: TextInputType.number,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: const InputDecoration(
                       border: InputBorder.none,
                       prefixText: "Q ",
@@ -433,83 +445,16 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
             itemCount: section.expenses.length,
             itemBuilder: (context, index) {
               final expense = section.expenses[index];
-              return Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.grey[850]!)),
-                ),
-                child: Row(
-                  children: [
-                    Checkbox(
-                      value: expense.isPaid,
-                      onChanged: (v) {
-                        setState(() {
-                          expense.isPaid = v ?? false;
-                          _hasChanges = true;
-                        });
-                      },
-                      activeColor: AppColors.primary,
-                    ),
-                    Expanded(
-                      flex: 3,
-                      child: TextFormField(
-                        initialValue: expense.name,
-                        style: TextStyle(
-                          decoration: expense.isPaid
-                              ? TextDecoration.lineThrough
-                              : null,
-                          color: expense.isPaid ? Colors.grey : null,
-                        ),
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          hintText: "Concepto",
-                        ),
-                        onChanged: (v) {
-                          expense.name = v;
-                          _hasChanges = true;
-                        },
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: TextFormField(
-                        initialValue: expense.amount == 0
-                            ? ''
-                            : expense.amount.toString(),
-                        textAlign: TextAlign.right,
-                        style: TextStyle(
-                          decoration: expense.isPaid
-                              ? TextDecoration.lineThrough
-                              : null,
-                          color: expense.isPaid ? Colors.grey : null,
-                        ),
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                        ),
-                        onChanged: (v) {
-                          setState(() {
-                            expense.amount = double.tryParse(v) ?? 0;
-                            _hasChanges = true;
-                          });
-                        },
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.close,
-                        size: 16,
-                        color: Colors.grey,
-                      ),
-                      onPressed: () => _removeExpense(section, index),
-                      constraints: const BoxConstraints(),
-                      padding: const EdgeInsets.only(left: 8),
-                    ),
-                  ],
-                ),
+              return ExpenseItemWidget(
+                key: ValueKey(expense.id ?? 'expense_$index'),
+                expense: expense,
+                index: index,
+                onDelete: () => _removeExpense(section, index),
+                onChanged: () {
+                  setState(() {
+                    _hasChanges = true;
+                  });
+                },
               );
             },
           ),
@@ -555,7 +500,9 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
                             : section.savings.toString(),
                         textAlign: TextAlign.right,
                         style: const TextStyle(fontWeight: FontWeight.bold),
-                        keyboardType: TextInputType.number,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         decoration: const InputDecoration(
                           isDense: true,
                           contentPadding: EdgeInsets.symmetric(vertical: 4),
@@ -618,5 +565,88 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
       'Dic',
     ];
     return months[month - 1];
+  }
+}
+
+// Widget separado para cada expense item
+class ExpenseItemWidget extends StatelessWidget {
+  final BudgetExpense expense;
+  final int index;
+  final VoidCallback onDelete;
+  final VoidCallback onChanged;
+
+  const ExpenseItemWidget({
+    super.key,
+    required this.expense,
+    required this.index,
+    required this.onDelete,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: Colors.grey[850]!)),
+      ),
+      child: Row(
+        children: [
+          Checkbox(
+            value: expense.isPaid,
+            onChanged: (v) {
+              expense.isPaid = v ?? false;
+              onChanged();
+            },
+            activeColor: AppColors.primary,
+          ),
+          Expanded(
+            flex: 3,
+            child: TextFormField(
+              initialValue: expense.name,
+              style: TextStyle(
+                decoration: expense.isPaid ? TextDecoration.lineThrough : null,
+                color: expense.isPaid ? Colors.grey : null,
+              ),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                hintText: "Concepto",
+              ),
+              onChanged: (v) {
+                expense.name = v;
+                onChanged();
+              },
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: TextFormField(
+              initialValue: expense.amount == 0
+                  ? ''
+                  : expense.amount.toString(),
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                decoration: expense.isPaid ? TextDecoration.lineThrough : null,
+                color: expense.isPaid ? Colors.grey : null,
+              ),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(border: InputBorder.none),
+              onChanged: (v) {
+                expense.amount = double.tryParse(v) ?? 0;
+                onChanged();
+              },
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 16, color: Colors.grey),
+            onPressed: onDelete,
+            constraints: const BoxConstraints(),
+            padding: const EdgeInsets.only(left: 8),
+          ),
+        ],
+      ),
+    );
   }
 }

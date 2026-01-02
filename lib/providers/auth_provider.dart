@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import '../services/http_service.dart';
 import '../services/storage_service.dart';
+import '../services/notification_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final HttpService _httpService = HttpService();
@@ -191,6 +192,14 @@ class AuthProvider extends ChangeNotifier {
 
         _user = userData;
         _isAuthenticated = true;
+
+        // Send FCM token to backend for push notifications
+        print("DEBUG: Login exitoso, enviando FCM token...");
+        // Wait a bit to ensure Firebase is fully initialized
+        Future.delayed(const Duration(seconds: 2), () async {
+          print("DEBUG: Ejecutando envío de FCM token después de delay...");
+          await _sendFCMTokenToBackend();
+        });
       }
     } catch (e) {
       rethrow;
@@ -242,5 +251,51 @@ class AuthProvider extends ChangeNotifier {
     _isAuthenticated = false;
     _user = null;
     notifyListeners();
+  }
+
+  Future<void> _sendFCMTokenToBackend() async {
+    try {
+      final fcmToken = await NotificationService.getToken();
+      print("DEBUG: FCM Token obtenido: ${fcmToken?.substring(0, 20)}...");
+
+      if (fcmToken != null) {
+        final response = await _httpService.client.put(
+          '/users/fcm-token',
+          data: {'fcmToken': fcmToken},
+        );
+        print(
+          "DEBUG: FCM Token enviado al backend - Status: ${response.statusCode}",
+        );
+      } else {
+        print("DEBUG: No se pudo obtener FCM token");
+      }
+    } catch (e) {
+      print("DEBUG: Error enviando FCM token: $e");
+    }
+  }
+
+  // Method for manual token sending
+  Future<bool> sendFCMTokenManually() async {
+    try {
+      print("DEBUG: Intento manual de enviar FCM token...");
+      final fcmToken = await NotificationService.getToken();
+
+      if (fcmToken != null) {
+        final response = await _httpService.client.put(
+          '/users/fcm-token',
+          data: {'fcmToken': fcmToken},
+        );
+        print(
+          "DEBUG: FCM Token enviado manualmente - Status: ${response.statusCode}",
+        );
+        return response.statusCode == 200;
+      } else {
+        print("DEBUG: No se pudo obtener FCM token manualmente");
+        return false;
+      }
+    } catch (e) {
+      print("DEBUG: Error enviando FCM token manualmente: $e");
+      return false;
+    }
   }
 }

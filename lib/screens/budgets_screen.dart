@@ -16,11 +16,13 @@ class BudgetsScreen extends StatefulWidget {
 }
 
 class _BudgetsScreenState extends State<BudgetsScreen> {
+  int _selectedYear = DateTime.now().year;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<BudgetProvider>().getBudgets();
+      context.read<BudgetProvider>().getBudgets(year: _selectedYear);
     });
   }
 
@@ -40,6 +42,20 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       'Dic',
     ];
     return months[month - 1];
+  }
+
+  List<DropdownMenuItem<int>> _generateYearItems() {
+    final currentYear = DateTime.now().year;
+    final years = <int>[];
+
+    // Agregar años desde 2020 hasta 3 años en el futuro
+    for (int year = 2020; year <= currentYear + 3; year++) {
+      years.add(year);
+    }
+
+    return years.reversed.map((year) {
+      return DropdownMenuItem<int>(value: year, child: Text(year.toString()));
+    }).toList();
   }
 
   @override
@@ -65,37 +81,96 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
           ),
         ],
       ),
-      body: provider.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : provider.budgets.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    "No tienes presupuestos creados",
-                    style: TextStyle(fontSize: 16),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const AddBudgetScreen(),
-                      ),
-                    ),
-                    child: const Text("Crear mi primer presupuesto"),
-                  ),
-                ],
-              ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: provider.budgets.length,
-              itemBuilder: (context, index) {
-                return _buildBudgetCard(provider.budgets[index]);
-              },
+      body: Column(
+        children: [
+          // Barra de filtros
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              border: Border(bottom: BorderSide(color: Colors.grey[800]!)),
             ),
+            child: Row(
+              children: [
+                const Icon(Icons.filter_list, color: Colors.grey),
+                const SizedBox(width: 12),
+                const Text(
+                  "Año:",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[850],
+                    borderRadius: BorderRadius.circular(25),
+                    border: Border.all(color: Colors.grey[700]!),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<int>(
+                      value: _selectedYear,
+                      isDense: true,
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                      dropdownColor: AppColors.surface,
+                      icon: const Icon(
+                        Icons.arrow_drop_down,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      items: _generateYearItems(),
+                      onChanged: (year) {
+                        if (year != null) {
+                          setState(() {
+                            _selectedYear = year;
+                          });
+                          context.read<BudgetProvider>().getBudgets(year: year);
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Contenido principal
+          Expanded(
+            child: provider.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : provider.budgets.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "No tienes presupuestos para $_selectedYear",
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AddBudgetScreen(),
+                            ),
+                          ),
+                          child: const Text("Crear presupuesto"),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: provider.budgets.length,
+                    itemBuilder: (context, index) {
+                      return _buildBudgetCard(provider.budgets[index]);
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -123,8 +198,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
           MaterialPageRoute(builder: (_) => BudgetDetailScreen(budget: budget)),
         );
         // Refresh when coming back
-        if (context.mounted) {
-          context.read<BudgetProvider>().getBudgets();
+        if (mounted) {
+          context.read<BudgetProvider>().getBudgets(year: _selectedYear);
         }
       },
       child: Card(
@@ -243,22 +318,34 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
-              context
-                  .read<BudgetProvider>()
+              final messenger = ScaffoldMessenger.of(context);
+              final provider = context.read<BudgetProvider>();
+              provider
                   .copyBudget(sourceId, toMonth, toYear)
-                  .then(
-                    (_) => ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Presupuesto copiado")),
-                    ),
-                  )
-                  .catchError(
-                    (e) => ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(e.toString()),
-                        backgroundColor: AppColors.error,
-                      ),
-                    ),
-                  );
+                  .then((_) {
+                    // Actualizar el año seleccionado si se copió a un año diferente
+                    if (toYear != _selectedYear && mounted) {
+                      setState(() {
+                        _selectedYear = toYear;
+                      });
+                    }
+                    if (mounted) {
+                      provider.getBudgets(year: _selectedYear);
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text("Presupuesto copiado")),
+                      );
+                    }
+                  })
+                  .catchError((e) {
+                    if (mounted) {
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text(e.toString()),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
+                    }
+                  });
             },
             child: const Text("Copiar"),
           ),

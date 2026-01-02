@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/card_provider.dart';
-import '../models/credit_card.dart';
 import '../models/transaction.dart'
     as model; // Alias to avoid conflict with dart:html if web
 import '../models/installment.dart';
@@ -147,42 +146,30 @@ class _CardDetailScreenState extends State<CardDetailScreen>
   }
 
   Widget _buildTransactionItem(model.Transaction t, BuildContext context) {
-    // If paid, just show. If not paid, allow swipe.
-    if (t.isPaid) {
-      return Card(
-        color: AppColors.surface,
-        child: ListTile(
-          leading: const Icon(Icons.check_circle, color: AppColors.primary),
-          title: Text(t.description),
-          subtitle: Text(t.date.split('T')[0]),
-          trailing: Text(
-            "${t.currency} ${t.amount.toStringAsFixed(2)}",
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              decoration: TextDecoration.lineThrough,
-              color: Colors.grey,
-            ),
-          ),
-        ),
-      );
-    }
-
+    // Both paid and unpaid transactions now have swipe functionality
     return Dismissible(
       key: Key(t.id),
       direction: DismissDirection.startToEnd,
       background: Container(
-        color: AppColors.primary,
+        color: t.isPaid ? AppColors.error : AppColors.primary,
         alignment: Alignment.centerLeft,
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: const Icon(Icons.payment, color: Colors.white),
+        child: Icon(
+          t.isPaid ? Icons.delete : Icons.payment,
+          color: Colors.white,
+        ),
       ),
       confirmDismiss: (direction) async {
         return await showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text("¿Pagar Transacción?"),
+            title: Text(
+              t.isPaid ? "¿Eliminar Transacción?" : "¿Pagar Transacción?",
+            ),
             content: Text(
-              "Se marcará como pagada y liberará límite.\n\n${t.description} - ${t.currency} ${t.amount}",
+              t.isPaid
+                  ? "Esta transacción se eliminará permanentemente.\n\n${t.description} - ${t.currency} ${t.amount}"
+                  : "Se marcará como pagada y liberará límite.\n\n${t.description} - ${t.currency} ${t.amount}",
             ),
             actions: [
               TextButton(
@@ -191,34 +178,60 @@ class _CardDetailScreenState extends State<CardDetailScreen>
               ),
               TextButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                child: const Text("Pagar"),
+                style: TextButton.styleFrom(
+                  foregroundColor: t.isPaid
+                      ? AppColors.error
+                      : AppColors.primary,
+                ),
+                child: Text(t.isPaid ? "Eliminar" : "Pagar"),
               ),
             ],
           ),
         );
       },
       onDismissed: (direction) {
-        context.read<CardProvider>().payTransaction(t.id).catchError((e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.toString()),
-              backgroundColor: AppColors.error,
-            ),
-          );
-          // Refresh to restore item if failed? Ideally yes, but here we assume success or reload.
-        });
+        final messenger = ScaffoldMessenger.of(context);
+        if (t.isPaid) {
+          // Delete paid transaction
+          context.read<CardProvider>().deleteTransaction(t.id).catchError((e) {
+            if (mounted) {
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(e.toString()),
+                  backgroundColor: AppColors.error,
+                ),
+              );
+            }
+          });
+        } else {
+          // Pay unpaid transaction
+          context.read<CardProvider>().payTransaction(t.id).catchError((e) {
+            if (mounted) {
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(e.toString()),
+                  backgroundColor: AppColors.error,
+                ),
+              );
+            }
+          });
+        }
       },
       child: Card(
         color: AppColors.surface,
         child: ListTile(
-          leading: const Icon(Icons.credit_card, color: AppColors.white),
+          leading: Icon(
+            t.isPaid ? Icons.check_circle : Icons.credit_card,
+            color: t.isPaid ? AppColors.primary : AppColors.white,
+          ),
           title: Text(t.description),
           subtitle: Text(t.date.split('T')[0]),
           trailing: Text(
             "${t.currency} ${t.amount.toStringAsFixed(2)}",
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: AppColors.white,
+              decoration: t.isPaid ? TextDecoration.lineThrough : null,
+              color: t.isPaid ? Colors.grey : null,
             ),
           ),
         ),
