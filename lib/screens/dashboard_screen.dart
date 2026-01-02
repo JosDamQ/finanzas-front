@@ -467,8 +467,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
     }
 
-    // Show top 3 pending
-    final topPending = pendingExpenses.take(3).toList();
+    // Show all pending expenses (not just top 3)
+    final allPending = pendingExpenses;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -547,30 +547,82 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
 
-        if (topPending.isNotEmpty) ...[
+        if (allPending.isNotEmpty) ...[
           const SizedBox(height: 20),
-          const Text(
-            "Pendiente de Pago",
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Pendiente de Pago",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              Text(
+                "${allPending.length} pendientes",
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
-          ...topPending.map(
-            (e) => Card(
-              color: AppColors.surface,
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                leading: const Icon(
-                  Icons.warning_amber_rounded,
-                  color: AppColors.warning,
-                ),
-                title: Text(e['name']),
-                trailing: Text(
-                  "Q ${(e['amount'] as double).toStringAsFixed(2)}",
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                dense: true,
-              ),
+          // Contenedor con scroll propio para los pagos pendientes
+          Container(
+            height: allPending.length > 3
+                ? 200
+                : null, // Altura fija solo si hay más de 3 items
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey[800]!),
             ),
+            child: allPending.length > 3
+                ? ListView.builder(
+                    padding: const EdgeInsets.all(8),
+                    itemCount: allPending.length,
+                    itemBuilder: (context, index) {
+                      final expense = allPending[index];
+                      return Card(
+                        color: AppColors.surface,
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: ListTile(
+                          leading: const Icon(
+                            Icons.warning_amber_rounded,
+                            color: AppColors.warning,
+                          ),
+                          title: Text(expense['name']),
+                          trailing: Text(
+                            "Q ${(expense['amount'] as double).toStringAsFixed(2)}",
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          dense: true,
+                        ),
+                      );
+                    },
+                  )
+                : Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Column(
+                      children: allPending
+                          .map(
+                            (expense) => Card(
+                              color: AppColors.surface,
+                              margin: const EdgeInsets.only(bottom: 8),
+                              child: ListTile(
+                                leading: const Icon(
+                                  Icons.warning_amber_rounded,
+                                  color: AppColors.warning,
+                                ),
+                                title: Text(expense['name']),
+                                trailing: Text(
+                                  "Q ${(expense['amount'] as double).toStringAsFixed(2)}",
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                dense: true,
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ),
           ),
         ],
       ],
