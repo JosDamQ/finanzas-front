@@ -70,9 +70,10 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
     });
   }
 
-  void _removeExpense(BudgetSection section, int index) {
-    // Verificar que el índice sea válido
-    if (index >= 0 && index < section.expenses.length) {
+  void _removeExpense(BudgetSection section, BudgetExpense expense) {
+    // Buscar el expense en la lista y eliminarlo por referencia, no por índice
+    final index = section.expenses.indexOf(expense);
+    if (index != -1) {
       setState(() {
         section.expenses.removeAt(index);
         _hasChanges = true;
@@ -446,10 +447,10 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
             itemBuilder: (context, index) {
               final expense = section.expenses[index];
               return ExpenseItemWidget(
-                key: ValueKey(expense.id ?? 'expense_$index'),
+                key: ObjectKey(expense),
                 expense: expense,
                 index: index,
-                onDelete: () => _removeExpense(section, index),
+                onDelete: () => _removeExpense(section, expense),
                 onChanged: () {
                   setState(() {
                     _hasChanges = true;
@@ -569,7 +570,7 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
 }
 
 // Widget separado para cada expense item
-class ExpenseItemWidget extends StatelessWidget {
+class ExpenseItemWidget extends StatefulWidget {
   final BudgetExpense expense;
   final int index;
   final VoidCallback onDelete;
@@ -584,6 +585,30 @@ class ExpenseItemWidget extends StatelessWidget {
   });
 
   @override
+  State<ExpenseItemWidget> createState() => _ExpenseItemWidgetState();
+}
+
+class _ExpenseItemWidgetState extends State<ExpenseItemWidget> {
+  late TextEditingController _nameController;
+  late TextEditingController _amountController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.expense.name);
+    _amountController = TextEditingController(
+      text: widget.expense.amount == 0 ? '' : widget.expense.amount.toString(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -593,55 +618,59 @@ class ExpenseItemWidget extends StatelessWidget {
       child: Row(
         children: [
           Checkbox(
-            value: expense.isPaid,
+            value: widget.expense.isPaid,
             onChanged: (v) {
-              expense.isPaid = v ?? false;
-              onChanged();
+              setState(() {
+                widget.expense.isPaid = v ?? false;
+              });
+              widget.onChanged();
             },
             activeColor: AppColors.primary,
           ),
           Expanded(
             flex: 3,
             child: TextFormField(
-              initialValue: expense.name,
+              controller: _nameController,
               style: TextStyle(
-                decoration: expense.isPaid ? TextDecoration.lineThrough : null,
-                color: expense.isPaid ? Colors.grey : null,
+                decoration: widget.expense.isPaid
+                    ? TextDecoration.lineThrough
+                    : null,
+                color: widget.expense.isPaid ? Colors.grey : null,
               ),
               decoration: const InputDecoration(
                 border: InputBorder.none,
                 hintText: "Concepto",
               ),
               onChanged: (v) {
-                expense.name = v;
-                onChanged();
+                widget.expense.name = v;
+                widget.onChanged();
               },
             ),
           ),
           Expanded(
             flex: 2,
             child: TextFormField(
-              initialValue: expense.amount == 0
-                  ? ''
-                  : expense.amount.toString(),
+              controller: _amountController,
               textAlign: TextAlign.right,
               style: TextStyle(
-                decoration: expense.isPaid ? TextDecoration.lineThrough : null,
-                color: expense.isPaid ? Colors.grey : null,
+                decoration: widget.expense.isPaid
+                    ? TextDecoration.lineThrough
+                    : null,
+                color: widget.expense.isPaid ? Colors.grey : null,
               ),
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
               decoration: const InputDecoration(border: InputBorder.none),
               onChanged: (v) {
-                expense.amount = double.tryParse(v) ?? 0;
-                onChanged();
+                widget.expense.amount = double.tryParse(v) ?? 0;
+                widget.onChanged();
               },
             ),
           ),
           IconButton(
             icon: const Icon(Icons.close, size: 16, color: Colors.grey),
-            onPressed: onDelete,
+            onPressed: widget.onDelete,
             constraints: const BoxConstraints(),
             padding: const EdgeInsets.only(left: 8),
           ),
