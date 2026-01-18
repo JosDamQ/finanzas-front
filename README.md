@@ -17,29 +17,29 @@
   <table>
     <tr>
       <td align="center">
-        <img src="screenshots/Login.png" width="200" alt="Login con Biometría">
+        <img src="screenshots/Login.jpeg" width="200" alt="Login con Biometría">
         <br><b>🔐 Login Biométrico</b>
       </td>
       <td align="center">
-        <img src="screenshots/Dashboard.png" width="200" alt="Dashboard Principal">
+        <img src="screenshots/Dashboard.jpeg" width="200" alt="Dashboard Principal">
         <br><b>📊 Dashboard</b>
       </td>
       <td align="center">
-        <img src="screenshots/Cuotas.png" width="200" alt="Gestión de Cuotas">
+        <img src="screenshots/Cuotas.jpeg" width="200" alt="Gestión de Cuotas">
         <br><b>💳 Cuotas</b>
       </td>
     </tr>
     <tr>
       <td align="center">
-        <img src="screenshots/Gastos.png" width="200" alt="Agregar Gastos">
+        <img src="screenshots/Gastos.jpeg" width="200" alt="Agregar Gastos">
         <br><b>💰 Gastos</b>
       </td>
       <td align="center">
-        <img src="screenshots/Info-Cuotas.png" width="200" alt="Detalle de Cuotas">
+        <img src="screenshots/Info-Cuotas.jpeg" width="200" alt="Detalle de Cuotas">
         <br><b>📋 Detalle</b>
       </td>
       <td align="center">
-        <img src="screenshots/Prespuesto.png" width="200" alt="Presupuestos">
+        <img src="screenshots/Presupuesto.jpeg" width="200" alt="Presupuestos">
         <br><b>📈 Presupuestos</b>
       </td>
     </tr>
@@ -290,7 +290,7 @@ front/
 ## 🎯 Funcionalidades Detalladas
 
 ### 🔐 **Autenticación Biométrica**
-<img src="screenshots/Login.png" width="250" align="right" alt="Login Screen">
+<img src="screenshots/Login.jpeg" width="250" align="right" alt="Login Screen">
 
 - **Login Seguro** - Autenticación con Face ID, Touch ID o huella dactilar
 - **Registro Completo** - Proceso de alta intuitivo y rápido
@@ -300,7 +300,7 @@ front/
 <br clear="right"/>
 
 ### 📊 **Dashboard Inteligente**
-<img src="screenshots/Dashboard.png" width="250" align="right" alt="Dashboard Screen">
+<img src="screenshots/Dashboard.jpeg" width="250" align="right" alt="Dashboard Screen">
 
 - **Vista General** - Resumen de todas las tarjetas y balances
 - **Indicadores Visuales** - Gráficos y barras de progreso
@@ -310,7 +310,7 @@ front/
 <br clear="right"/>
 
 ### 💳 **Gestión de Tarjetas y Cuotas**
-<img src="screenshots/Cuotas.png" width="250" align="right" alt="Cuotas Screen">
+<img src="screenshots/Cuotas.jpeg" width="250" align="right" alt="Cuotas Screen">
 
 - **Lista Completa** - Todas tus tarjetas organizadas
 - **Detalles Precisos** - Límites, deudas y disponible
@@ -320,7 +320,7 @@ front/
 <br clear="right"/>
 
 ### 💰 **Transacciones y Gastos**
-<img src="screenshots/Gastos.png" width="250" align="right" alt="Gastos Screen">
+<img src="screenshots/Gastos.jpeg" width="250" align="right" alt="Gastos Screen">
 
 - **Agregar Gastos** - Formulario rápido y sencillo
 - **Dos Modalidades** - Gastos normales o planes de cuotas
@@ -330,7 +330,7 @@ front/
 <br clear="right"/>
 
 ### 📋 **Detalles de Cuotas**
-<img src="screenshots/Info-Cuotas.png" width="250" align="right" alt="Info Cuotas Screen">
+<img src="screenshots/Info-Cuotas.jpeg" width="250" align="right" alt="Info Cuotas Screen">
 
 - **Información Completa** - Detalles de cada plan de cuotas
 - **Progreso Visual** - Cuotas pagadas vs pendientes
@@ -340,7 +340,7 @@ front/
 <br clear="right"/>
 
 ### 📈 **Presupuestos Dinámicos**
-<img src="screenshots/Prespuesto.png" width="250" align="right" alt="Presupuesto Screen">
+<img src="screenshots/Presupuesto.jpeg" width="250" align="right" alt="Presupuesto Screen">
 
 - **Planificación Mensual** - Presupuestos por mes y año
 - **Secciones Personalizables** - Ingresos, gastos y ahorros
