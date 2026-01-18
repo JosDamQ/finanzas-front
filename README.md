@@ -52,11 +52,6 @@ Administra tus tarjetas de crédito, transacciones, cuotas y presupuestos de man
 
 ## ✨ Características Principales
 
-<div align="center">
-  <table>
-    <tr>
-      <td width="50%">
-        
 ### 🔐 **Autenticación Segura**
 - ✅ **Login Biométrico** - Face ID / Touch ID / Huella dactilar
 - ✅ **Autenticación JWT** - Tokens seguros para sesiones
@@ -75,9 +70,6 @@ Administra tus tarjetas de crédito, transacciones, cuotas y presupuestos de man
 - ✅ **Estados de Pago** - Control visual de pagos pendientes
 - ✅ **Historial Detallado** - Seguimiento completo de movimientos
 
-      </td>
-      <td width="50%">
-        
 ### 📊 **Presupuestos Dinámicos**
 - ✅ **Presupuestos Mensuales** - Planificación por mes y año
 - ✅ **Secciones Personalizables** - Ingresos, gastos y ahorros
@@ -94,11 +86,6 @@ Administra tus tarjetas de crédito, transacciones, cuotas y presupuestos de man
 - ✅ **Push Notifications** - Alertas en tiempo real
 - ✅ **Firebase Integration** - Notificaciones confiables
 - ✅ **Recordatorios** - Fechas de pago y vencimientos
-
-      </td>
-    </tr>
-  </table>
-</div>
 
 ## 🛠️ Stack Tecnológico
 
@@ -619,8 +606,8 @@ Este proyecto está bajo la **Licencia MIT**. Ver el archivo `LICENSE` para más
   <h3>🚀 Damian Garcia</h3>
   <p><i>Desarrollador Full Stack</i></p>
   
-  [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/damiangarcia)
-  [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://linkedin.com/in/damiangarcia)
+  [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/JosDamQ)
+  [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://linkedin.com/in/josuegarciada)
 </div>
 
 ---
