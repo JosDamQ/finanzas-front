@@ -338,23 +338,14 @@ front/
 
 ## 🚀 Scripts y Comandos
 
-<div align="center">
-  <table>
-    <tr>
-      <th>🛠️ Desarrollo</th>
-      <th>📦 Build</th>
-      <th>🧹 Utilidades</th>
-    </tr>
-    <tr>
-      <td>
-
+### 🛠️ **Desarrollo**
 ```bash
-# Ejecutar en debug
+# Ejecutar en modo debug
 flutter run
 
-# Hot reload (automático)
-# Presiona 'r' para reload
-# Presiona 'R' para restart
+# Hot reload automático (ya incluido)
+# Presiona 'r' para hot reload
+# Presiona 'R' para hot restart
 
 # Ejecutar tests
 flutter test
@@ -363,15 +354,13 @@ flutter test
 flutter analyze
 ```
 
-      </td>
-      <td>
-
+### 📦 **Build y Release**
 ```bash
 # Android APK
 flutter build apk --release
 
-# Android Bundle
-flutter build appbundle
+# Android Bundle (recomendado para Play Store)
+flutter build appbundle --release
 
 # iOS
 flutter build ios --release
@@ -380,9 +369,7 @@ flutter build ios --release
 flutter build web --release
 ```
 
-      </td>
-      <td>
-
+### 🧹 **Utilidades**
 ```bash
 # Limpiar proyecto
 flutter clean
@@ -390,17 +377,12 @@ flutter clean
 # Obtener dependencias
 flutter pub get
 
-# Actualizar deps
+# Actualizar dependencias
 flutter pub upgrade
 
-# Generar iconos
+# Generar iconos de la app
 flutter pub run flutter_launcher_icons:main
 ```
-
-      </td>
-    </tr>
-  </table>
-</div>
 
 ## 🎨 Personalización
 
